@@ -4,6 +4,7 @@ import {User} from "../models/user.model.js"
 import {uploadFileOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js'
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose'
 const generateAccessAndRefreshTokens = async(userId)=>{
     try {
          const user =  await User.findById(userId)
@@ -196,14 +197,20 @@ const refreshAccessToken = asyncHandler(async (req, res)=>{
 
 
 const changeCurrentPassword = asyncHandler(async(req, res)=>{
-    const {oldPassword , newPassword} = req.body
-    const user = await User.findById(req.user?._id)
-   const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
-   if (!isPasswordCorrect) {
-    throw new ApiError(400 , "invalid old password")
-   }
-   user.password = newPassword
-   await user.save({validateBeforeSave : false})
+
+    try {
+        const {oldPassword , newPassword} = req.body
+        
+        const user = await User.findById(req.user?._id)
+       const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
+       if (!isPasswordCorrect) {
+        throw new ApiError(400 , "invalid old password")
+       }
+       user.password = newPassword
+       await user.save({validateBeforeSave : false})
+    } catch (error) {
+        console.log("error is here in changeCurrentPassword ")
+    }
 
    return res.status(200)
    .json(new ApiResponse(200 , {} ,"password change succesfully"))
@@ -284,14 +291,17 @@ const updateUserCoverImage = asyncHandler(async (req ,res)=>
 
 const getUserChannelProfile = asyncHandler(async (req ,res)=>{
    const {username} =  req.params
+
    if (!username?.trim()) {
     throw new ApiError(400 , "username is missing")
    }
- const channel = await User.aggregate([
+    const channel = await User.aggregate([
     {
         $match:{
             username : username?.toLowerCase()
-        },
+        }
+    },
+        {
         $lookup:{
             from : "subscriptions",
             localField : "_id",
@@ -412,6 +422,6 @@ export {registerUser ,
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
-    channel,
+    
     getWatchHistory
 }
