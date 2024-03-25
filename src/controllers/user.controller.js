@@ -6,15 +6,17 @@ import { ApiResponse } from '../utils/ApiResponse.js'
 
 const generateAccessAndRefreshTokens = async(userId)=>{
     try {
-         const user =  await User.findById(user)
+         const user =  await User.findById(userId)
           const accessToken =   user.generateAccessToken()
           const refreshToken = user.generateRefreshToken()
+
           user.refreshToken = refreshToken
            await  user.save({validateBeforeSave : false})
 
            return {accessToken , refreshToken}
     } catch (error) {
-        throw new ApiError(500  , "something went wrong while generating refresh token")
+        throw new ApiError(500  , "something went wrong while generating refresh token ")
+        // console.log(error)
     }
 }
 
@@ -90,11 +92,12 @@ const loginUser = asyncHandler(async (req, res) =>{
     //access and  refresh token
     //send cookie 
     const {email , username , password} = req.body
-    if (!username || !email) {
+
+    if (!username && !email) {
         throw new ApiError(400 , "username or email is required")
     }
    const user = await User.findOne({
-        $or : [{username} , {email}]
+        $or: [{username} , {email}]
     })
     if(!user){
         throw new ApiError(400, "user doesnt exits")
@@ -103,14 +106,17 @@ const loginUser = asyncHandler(async (req, res) =>{
     if(!isPasswordValid){
         throw new ApiError(401, "invalid user credientials")
     }
-  const{accessToken , refreshToken} =  await generateAccessAndRefreshTokens(user._id)
-  const loggedInUser = User.findById(user._id).select("-password -refreshToken")
+   const {accessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
   const options = {
     httpOnly : true ,
     secure : true
   }
-  return res.status(200).cookie("accessToken" ,accessToken , options)
+  return res
+  .status(200)
+  .cookie("accessToken" ,accessToken , options)
   .cookie("refreshToken" , refreshToken ,  options)
   .json(
     new ApiResponse(
@@ -128,8 +134,8 @@ const logoutUser = asyncHandler(async (req , res)=>{
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set:{
-                refreshToken : undefined
+            $unset:{
+                refreshToken : 1
             }
         },
         {
