@@ -4,6 +4,18 @@ import {ApiResponse} from '../utils/ApiResponse.js'
 import { User } from '../models/user.model.js'
 import { uploadFileOnCloudinary } from '../utils/cloudinary.js'
 
+const generateAccessTokenAndRefreshToken = async (userId)=>{
+    try {
+        const user = User.findById(userId)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+        user.refreshToken = refreshToken
+     await user.save({validateBeforeSave: false})
+        return {accessToken , refreshToken}
+    } catch (error) {
+        throw new ApiError(500 , "something went wrong while generating access and refresh token ")
+    }
+}
 
 const registerUser = asyncHandler(async (req ,res)=>{
 
@@ -11,16 +23,16 @@ const registerUser = asyncHandler(async (req ,res)=>{
     //getting user details  from frontend
     const {fullname , email , username , password} = req.body
 
-    console.log(req.body)
+    // console.log(req.body)
 
     //checking if the details are not empty
-    if ([fullname , email ,username , password].some((inputs)=>inputs?.trim() === "")
+    if ([fullname ,password, email ,username ,  ].some((field)=>field?.trim() === "")
         ) {
     throw new ApiError(400 , "all fields are required") 
     }
 
     //checking if user already existed or not
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or : [{username} , {email} , {fullname}]
     })
 
@@ -33,11 +45,18 @@ const registerUser = asyncHandler(async (req ,res)=>{
     //checking for images , check for avatar
       
    const avatarLocalPath =  req.files?.avatar[0]?.path;
-   const coverImageLocalPath = req.files?.coverImage[0]?.path;
+//    const coverImageLocalPath = req.files?.coverImage[0]?.path;
+
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0 )  {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+
+
    if (!avatarLocalPath) {
     throw new ApiError(400 , "avatar is requried")
    }
-
+//    console.log(req.files)
 
    //uploading images to cloudinary 
    const avatar = await uploadFileOnCloudinary(avatarLocalPath)
@@ -55,7 +74,8 @@ const registerUser = asyncHandler(async (req ,res)=>{
     email,
     avatar :avatar.url,
     coverImage : coverImage?.url || "",
-    username : username.toLowerCase()
+    username : username.toLowerCase(),
+    password
    })
    //removing password and refreshToken from database
     const createdUser =  await User.findById(user._id).select("-password -refreshToken")
@@ -68,6 +88,31 @@ const registerUser = asyncHandler(async (req ,res)=>{
     )
 })
 
+    const loginUser = asyncHandler( async (req ,res)=>{
+        //todo for this functionality 
+        // get data from frontend 
+        // find the user
+        // password validation  
+        // access & refresh token generation
+        const {email , username , password} = req.body
+        if(!username || !email){
+            throw new ApiError(400 , "username or email is required")
+        }
+        const user = await User.findOne({
+            $or : [{username} , {email}]
+        })
+        if(!user){
+            throw new ApiError(401 , "user does not exist")
+        }
+        const passwordValidation = await user.isPasswordCorrect(password)
+        if(!passwordValidation){
+            throw new ApiError(401 , "password is incorrect")
+        }
+
+       const {accessToken , refreshToken} =  await generateAccessTokenAndRefreshToken(user._id)
+
+    })
 
 
-export {registerUser}
+
+export {registerUser , loginUser}

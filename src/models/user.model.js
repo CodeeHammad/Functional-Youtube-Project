@@ -24,6 +24,10 @@ const userSchema = new Schema(
       trim: true,
       index: true,
     },
+    password: {
+      type: String,
+      required: true,
+    },
     avatar: {
       type: String, // cloudinary url
       required: true,
@@ -37,10 +41,7 @@ const userSchema = new Schema(
         ref: "Video",
       },
     ],
-    password: {
-      type: String,
-      required: [true, "password is required"],
-    },
+   
     refreshToken: {
       type: String,
     },
