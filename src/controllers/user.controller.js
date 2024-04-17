@@ -88,7 +88,7 @@ const registerUser = asyncHandler(async (req ,res)=>{
     )
 })
 
-    const loginUser = asyncHandler( async (req ,res)=>{
+const loginUser = asyncHandler( async (req ,res)=>{
         //todo for this functionality 
         // get data from frontend 
         // find the user
@@ -111,8 +111,49 @@ const registerUser = asyncHandler(async (req ,res)=>{
 
        const {accessToken , refreshToken} =  await generateAccessTokenAndRefreshToken(user._id)
 
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+        //removing password and refresht token 
+
+        const options = {
+            httpOnly : true ,
+            secure : true 
+        }
+        return res.status(200)
+        .cookie("accessToken" , accessToken , options)
+        .cookie("refreshToken" , refreshToken , options)
+        .json(
+            new ApiResponse(200 , {
+                user : loggedInUser , accessToken , refreshToken
+            }
+            , "user logged in succesfully"
+        )
+        )
+
+
     })
+const logoutUser = asyncHandler( async( req , res)=>{
+   await User.findByIdAndUpdate(
+        req.user._id,{
+            $set:{
+                refreshToken : undefined
+            },
+            },
+        {
+            new : true
+        }
+    )
+    
+    const options = {
+        httpsOnly : true ,
+        secure : true 
+    }
+    return res.status(200 )
+    .clearCookie("accessToken" , options)
+    .clearCookie("refreshToken" , options )
+    .json(200 , {} ,"User logged out successfully")
+})
 
 
 
-export {registerUser , loginUser}
+
+export {registerUser , loginUser  , logoutUser}
