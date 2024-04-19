@@ -166,8 +166,8 @@ const refreshAccessToken = asyncHandler(async (req , res)=>{
       const decodedToken = jwt.verify(incomingRefreshToken , process.env.REFRESH_TOKEN_SECRET)
   
       //finding user by id from decoded token 
-      const user = User.findById(decodedToken?._id)
-  
+      const user = await User.findById(decodedToken?._id)
+    console.log(user._id)
       if(!user){
           throw new ApiError(401 , "Invalid Refresh Token")
       }
@@ -184,14 +184,14 @@ const refreshAccessToken = asyncHandler(async (req , res)=>{
       }
       
       //generating new refresh token 
-     const {accessToken , newRefreshToken} = await generateAccessTokenAndRefreshToken(user._id)
-  
+     const {accessToken , refreshToken} = await generateAccessTokenAndRefreshToken(user._id)
+      
      //sending response to frontend
      return res.status(200)
      .cookie("accessToken" , accessToken , options)
-     .cookie("refreshToken" , newRefreshToken, options)
+     .cookie("refreshToken" , refreshToken, options)
      .json(
-      new ApiResponse(200 , {accessToken , refreshToken: newRefreshToken }, "Access token refreshed successfully")
+      new ApiResponse(200 , {accessToken , refreshToken }, "Access token refreshed successfully")
      ) 
   
   } catch (error) {
@@ -239,10 +239,10 @@ const updateAccountDetails = asyncHandler(async (req , res)=>{
     }
 
     //finding user and upadating user details 
-    const user = await User.findByIdAndUpdate(req.user?_id ,
-         {$set: {
+    const user = await User.findByIdAndUpdate(req.user?._id ,
+         { $set: {
         fullname : fullname ,
-        email : email
+        email : email,
     }} , { new : true}).select("-password")
 
     return res.status(200)
@@ -262,12 +262,15 @@ const updateAvatar = asyncHandler(async (req , res)=>{
     throw new ApiError(400 , "Error while uploading avatar")
   }
 
- const user =  await User.findByIdAndUpdate(req.user?._id, {$set:{
+ const user =  await User.findByIdAndUpdate(req.user?._id, 
+    {
+        $set: {
     avatar : avatar.url
-  }} , {new :true }).select("-password")
+  }
+} , {new :true }).select("-password")
 
   return res.status(200)
-  .json(200 , new ApiResponse(200 , user , "Avatar is updated successfully"))
+  .json( new ApiResponse(200 , user , "Avatar is updated successfully"))
 })
 
 const updateUserCoverImage = asyncHandler(async (req , res)=>{
@@ -286,7 +289,7 @@ const updateUserCoverImage = asyncHandler(async (req , res)=>{
   }} , {new :true }).select("-password")
 
   return res.status(200)
-  .json(200 , new ApiResponse(200 , user , "Cover Image updated successfully"))
+  .json(new ApiResponse(200 , user , "Cover Image updated successfully"))
 })
 
 const getUserChannelProfile = asyncHandler(async (req , res)=>{
@@ -319,16 +322,17 @@ const getUserChannelProfile = asyncHandler(async (req , res)=>{
         {
             $addFields:{
                 subscriberCount:{
-                    $size : "subscribers"
+                    $size : "$subscribers"
                 },
                 subscribedToChannel :{
-                    $size : "subscribedTo"
+                    $size : "$subscribedTo"
                 },
                 isSubscribed : {
                     $cond:{
-                        if:{ $in:[req.user?._id] , "$subscribers.subscriber"},
-                        then:{true},
-                        else:{false}
+                        if: { 
+                            $in: [req.user?._id , "$subscribers.subscriber"]} ,
+                        then:true ,
+                        else : false
                     }
                 }
             }
