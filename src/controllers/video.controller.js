@@ -158,14 +158,14 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     if (!video) {
         throw new ApiError(404 , "Video is not uploaded")
     }
-    if (video.isPublished) {
-         !video.isPublished;
-    }
-    else{
-        video.isPublished
-    }
+    video.isPublished = !video.isPublished
     await video.save()
 
+    const updatedVideo = await Video.findById(videoId)
+    res.status(200)
+    .json(
+        new ApiResponse(200 , updatedVideo , "video has been toggled")
+    )
 })
 
 export {
