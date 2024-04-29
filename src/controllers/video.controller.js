@@ -51,7 +51,6 @@ const getAllVideos = asyncHandler(async (req , res)=>{
          // $project is used to include , exclude , rename or create new field  in the output document 
          // 1 means to include the fields
                             _id : 1 ,
-                            _id : 1,
                             avatar: "$avatar.url",
                             fullname :1 ,
                             username : 1
@@ -102,7 +101,7 @@ const getAllVideos = asyncHandler(async (req , res)=>{
     }
     Video.aggregatePaginate(videoAggregate ,options)
     .then(result =>{
-        if (result?.videos?.length === 0 && userId) {
+        if (result?.videos?.length === 0 && userId ) {
             return res.status(200)
             .json(new ApiResponse(200 , [] , "videos is not found"))
         }
