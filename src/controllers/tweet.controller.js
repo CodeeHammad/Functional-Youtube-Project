@@ -11,7 +11,6 @@ const createTweet = asyncHandler(async (req, res) => {
     if (!content || content.trim()==="") {
         throw new ApiError(404 , "fields are empty")
     }
-    const user = await User.findById(req.user?._id , {_id: 1})
     const tweet = await Tweet.create({
         content , owner : req?.user?._id
     })
@@ -28,85 +27,19 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
     // TODO: get user tweets
-
-    const {userId} = req.params;
+    const {userId} = req.params
     if (!userId) {
-        throw new ApiError(404 , "User id is required")
+        throw new ApiError(404 , "user id is required")
     }
-    if (!isValidObjectId(userId)) {
-        throw new ApiError(404 , "User id is not valid")
+    const tweets = await Tweet.find({
+        owner : userId
+    })
+    if (!tweets) {
+        throw new ApiError(404 , "user not found")
     }
-    const {page = 1 , limit = 10 } = req.query;
-    const user = await User.findById(userId).select("_id")
-    if (!user) {
-        throw new ApiError(404 , "User is not found")
-    }
-    const tweetAggregate = Tweet.aggregate([
-        {
-            $match:
-            { owner : new mongoose.Types.ObjectId(user?._id)} 
-        },
-        {
-            $lookup:{
-                from : "users",
-                localField:"owner",
-                foreignField:"_id",
-                as: "owner",
-                pipeline:[
-                    {
-                        $project:{
-                            _id : 1 ,
-                            username : 1,
-                            avatar : $avatar.url,
-                            fullname : 1
-                        }
-                    }
-                ]
-            }
-        },
-        {
-            $addFields:{
-                owner : {
-                    $first:$owner
-                }
-            }
-        },
-        {
-            $sort:{
-                createdAt : -1
-            }
-        }
-    ])
-        if (!tweetAggregate) {
-            throw new ApiError(404 , "Tweets not found")
-        }
 
-        const options = {
-            page : parseInt(page),
-            limit:parseInt(limit),
-            customLabels:{
-                totalDocs : "totalTweets",
-                docs : "tweets"
-            },
-            skip:(page - 1 )*limit
-        }
-        Tweet.aggregatePaginate(tweetAggregate , options)
-        .then(results=>{
-            console.log("congratulations")
-            if (results.length === 0 ) {
-            return res.status(200 )
-            .json( 
-                new ApiResponse(200  , results, "No Tweets Found")
-                )
-            }
-            return res.status(200)
-            .json(
-                new ApiResponse(200 , results , "Tweets fetched successfully")
-            )
-        }).catch(error =>{
-            console.log("something went wrong " , error)
-            throw new ApiError(404 , error?.message || "tweets cannot be displayed")
-        })
+    return res.status(200)
+    .json(new ApiResponse(200 , tweets , "All tweets has been fetched"))
 
 
 })
