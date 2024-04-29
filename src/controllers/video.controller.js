@@ -18,8 +18,8 @@ const getAllVideos = asyncHandler(async (req , res)=>{
  // dont use await because it will be not able to populate properly with aggregate pipeline in the next step 
     const matchCondition = {
         $or:[
-            { title : { $regex : query , options : "i"}},
-            { description : { $regex : query , options : "i"}}
+            { title : { $regex : query , $options : "i"}},
+            { description : { $regex : query , $options : "i"}}
         ]
     }
       //.owner is the property of matchCondition  object 
@@ -28,9 +28,9 @@ const getAllVideos = asyncHandler(async (req , res)=>{
         matchCondition.owner = new mongoose.Types.ObjectId(userId)
     }
 
-    // var videoAggregate ;
+    var videoAggregate ;
     try {
-       const  videoAggregate = Video.aggregate(
+       videoAggregate = Video.aggregate(
         [
             { // this filter the document base on the matchCondition 
                 $match : matchCondition
@@ -52,7 +52,7 @@ const getAllVideos = asyncHandler(async (req , res)=>{
          // 1 means to include the fields
                             _id : 1 ,
                             _id : 1,
-                            avatar: $avatar.url,
+                            avatar: "$avatar.url",
                             fullname :1 ,
                             username : 1
                         }
@@ -74,7 +74,7 @@ const getAllVideos = asyncHandler(async (req , res)=>{
             {
                 $sort:{
                      //The sorting criteria are specified using an object where the keys represent the field(s) to sort by, and the values represent the sorting order (1 for ascending order, -1 for descending order).
-                    [sortBy || "createdAt" ] : sortType || 1
+                    [sortBy || "createdAt" ] : parseInt(sortType) || 1 
                 }
             }
         ]
@@ -115,12 +115,6 @@ const getAllVideos = asyncHandler(async (req , res)=>{
         throw new ApiError(404 , error?.message || "error in aggreagation")})
     
 })
-
-
-
-
-
-
 
 
 const publishAVideo = asyncHandler(async (req ,res)=>{
