@@ -19,7 +19,7 @@ import subscriptionRouter from './routes/subscription.routes.js'
 app.use("/users" , router)
 app.use("/video" , videoRouter)
 app.use("/tweets" , tweetRouter)
-app.use("subscription" , subscriptionRouter)
+app.use("/subscription" , subscriptionRouter)
 
 
 export  { app }

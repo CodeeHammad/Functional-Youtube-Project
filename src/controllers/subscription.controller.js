@@ -8,18 +8,15 @@ import {asyncHandler} from "../utils/asyncHandler.js"
 
 const toggleSubscription = asyncHandler(async (req, res) => {
     const {channelId} = req.params
-    // TODO: toggle subscription
-    // checking channel id 
-    //checking if channel is subscriber throw's error
-    //if already subscribed ,  unsubscribed 
-    // create subscription
-    // return res 
+
 
     if (!channelId) throw new ApiError(404 , "user id is required")
+   
     if (!isValidObjectId(channelId)) throw new ApiError(404 , "channel id is not a valid object") 
     if (req.user?._id.toString() === channelId.toString() ){
         throw new ApiError("you cannot subscribed to your own channel")
     }
+   
 
     const subscription = await Subscription.findOne({
         channel : channelId,
@@ -90,14 +87,16 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
 
 // controller to return channel list to which user has subscribed
 const getSubscribedChannels = asyncHandler(async (req, res) => {
-    const { subscriberId } = req.params
+    const { _id } = req.user
 
-    if (!subscriberId) throw new ApiError(404 , "subscriber  id is required")
-    if (!isValidObjectId(subscriberId)) throw new ApiError(404 , "subscriber id is not a valid object") 
+  
+    if (!isValidObjectId(_id)) throw new ApiError(404 , "subscriber id is not a valid object") 
 
     const channel = await Subscription.aggregate([
         {
-            $match: new mongoose.Types.objectId(subscriberId)
+            $match: {
+            subscriber: new mongoose.Types.ObjectId(_id)}
+        
         },
         {
             $lookup:{
@@ -118,7 +117,7 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
                 fullname : 1,
                 username:1,
                 email:1,
-                avatar,
+                avatar:1,
                 _id:1
                }
             }
