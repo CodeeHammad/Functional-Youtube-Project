@@ -64,21 +64,22 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     if (!(playlistId) && (videoId)) {
         throw new ApiError(404 ,"playlistId and videoId is required")
     }
-    const video = await Video.findById(videoId)
-    if (!video) {
-        throw new ApiError(404 , "video is not available")
-    }
+    // const fvideo = await Video.findById(videoId)
+    // if (!fvideo) {
+    //     throw new ApiError(404 , "video is not available")
+    // }
     const addedVideo = await Playlist.findByIdAndUpdate(playlistId,
     {
         $addToSet:{
-            video: videoId //$addToSet is useful for ensuring that element remain unique in an array
+            videos: videoId //$addToSet is useful for ensuring that element remain unique in an array
         }
     },{new : true})
     if (!addedVideo) {
         throw new ApiError(404 , "Video is not added to the playlist")
     }
+    console.log(addedVideo)
   return res.status(200)
-      .json(new ApiResponse(200, addedVideo, "Api response is successfull"))
+      .json(new ApiResponse(200, addedVideo, "Added video is successfull"))
 
 })
 
