@@ -17,12 +17,14 @@ import videoRouter from './routes/video.routes.js'
 import tweetRouter from './routes/tweet.routes.js'
 import subscriptionRouter from './routes/subscription.routes.js'
 import playlistRouter from './routes/playlist.routes.js'
+import likeRouter from './routes/like.routes.js'
 
 app.use("/users" , router)
 app.use("/video" , videoRouter)
 app.use("/tweets" , tweetRouter)
 app.use("/subscription" , subscriptionRouter)
 app.use("/playlist" , playlistRouter)
+app.use("/like" , likeRouter)
 
 
 export  { app }
