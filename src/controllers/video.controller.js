@@ -175,14 +175,14 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
 
     const video = await Video.findById(videoId)
-    const videourl = video.url
+    
     
     if(!video){
         throw new ApiError(401 , "video is not available")
     }
     return res.status(200)
     .json(
-        new ApiResponse(200 , videourl , " video has been uploaded")
+        new ApiResponse(200 , video , " video has been found")
     )
 
 })

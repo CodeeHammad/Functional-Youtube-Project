@@ -89,13 +89,13 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
     if (!(playlistId) && (videoId)) {
         throw new ApiError(404 ,"playlistId and videoId is required")
     }
-    const video = await Video.findById(videoId)
+    const video = await Playlist.findById(videoId)
     if (!video) {
         throw new ApiError(404, "Video is not found")
     }
     const updatedPlaylist = await Playlist.findByIdAndUpdate(playlistId,
     {
-        $pull:{video : videoId}
+        $pull:{videos : videoId}
     },{new : true})
  if (!updatedPlaylist) {
     throw new ApiError(404, "Video has not been deleted")
@@ -112,10 +112,10 @@ const deletePlaylist = asyncHandler(async (req, res) => {
     }
     const dPlaylist = await Playlist.findByIdAndDelete(playlistId)
     if (!dPlaylist) {
-        throw new ApiError(404 , "playlist cannot be deleted")
+        throw new ApiError(404 , "playlist is not found")
     }
     return res.status(200)
-        .json(new ApiResponse(200, dPlaylist, "Api response is successfull"))
+        .json(new ApiResponse(200,  "Playlist deleted successfully"))
 })
 
 
@@ -133,10 +133,10 @@ const updatePlaylist = asyncHandler(async (req, res) => {
     const playlist = await Playlist.findByIdAndUpdate(playlistId ,
     {
         $set:{
-            name, 
-            description
+            name:name, 
+            description:description
         }
-    })
+    } , {new : true})
     if (!playlist) {
         throw new ApiError(404, "playlist cannot be updated")
     }

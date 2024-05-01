@@ -5,18 +5,18 @@ import { addVideoToPlaylist, createPlaylist, deletePlaylist, getPlaylistById, ge
 const router = Router()
 router.use(verifyJWT)
 
-router.route("/create-playlist").post(createPlaylist)
+router.route("/create-playlist").post(createPlaylist)//
 
-router.route("/userPlaylist/:userId").get(getUserPlaylists)
+router.route("/userPlaylist/:userId").get(getUserPlaylists)//
 
-router.route("/p/:playlistId").get(getPlaylistById)
+router.route("/p/:playlistId").get(getPlaylistById)//
 
-router.route("/a/:playlistId/a/:videoId").patch(addVideoToPlaylist)
+router.route("/a/:playlistId/a/:videoId").patch(addVideoToPlaylist)//
 
-router.route("/r/:playlistId/r/:videoId").patch(removeVideoFromPlaylist)
+router.route("/r/:playlistId/r/:videoId").patch(removeVideoFromPlaylist)//
 
-router.route("/:playlistId").delete(deletePlaylist)
+router.route("/:playlistId").delete(deletePlaylist)//
 
-router.route("/:playlistId").patch(updatePlaylist)
+router.route("/u/:playlistId").patch(updatePlaylist)
 
 export default router
