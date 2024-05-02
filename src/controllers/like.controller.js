@@ -3,6 +3,7 @@ import {Like} from "../models/like.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import {Video} from '../models/video.model.js'
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const {videoId} = req.params
@@ -10,16 +11,18 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     if (!videoId) {
         throw new ApiError(404, "Video id is required")
     }
-    const video = await Like.findById(videoId)
-   video.likedBy = !video.likedBy
-    await video.save()
-    const toggleVideo = await Like.findById(videoId)
-    if (!toggleVideo) {
-        throw new ApiError(404, "Video is not like or unlike")
+    const likedVideo = await Like.findOne({video : videoId , likedBy: req.user?._id})
+    if (likedVideo) {
+        await Like.findByIdAndDelete(likedVideo?._id)     
+        return res.status(200)
+            .json(new ApiResponse(200, "video has been unlike"))
+    }
+    const likeVideo = await Like.create({video: videoId , likedBy : req.user?._id })
+    if (!likeVideo) {
+        throw new ApiError(404, "video cannot be liked")
     }
     return res.status(200)
-        .json(new ApiResponse(200,toggleVideo , "Api response is successfull"))
-
+        .json(new ApiResponse(200, likeVideo, "video has been liked successfully"))
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
@@ -28,15 +31,16 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
     if (!commentId) {
         throw new ApiError(404, "Comment id is required")
     }
-    const comment = await Like.findById(commentId)
-    comment.likedBy = !comment.likedBy
-   await comment.save()
-    const updatedComment = await Like.findById(commentId)
-    if (!updatedComment) {
-        throw new ApiError(404, "comment cannot be updated")
+    const likedComment = await Like.findOne({commnet : commentId , likedBy : req.user?._id})
+    if (likedComment) {
+        await Like.findByIdAndDelete(likedComment?._id)
+        return res.status(200)
+            .json(new ApiResponse(200,likedComment , "comment has been unliked"))
     }
+
+    const likeComment = await Like.create({comment : commentId , likedBy:req.user?._id}) 
     return res.status(200)
-        .json(new ApiResponse(200, updatedComment, "Api response is successfull"))
+        .json(new ApiResponse(200,likeComment, "comment has been liked successfully"))
 })
 
 const toggleTweetLike = asyncHandler(async (req, res) => {
@@ -45,30 +49,63 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
     if (!tweetId) {
         throw new ApiError(404, "Tweet id is required")
     }
-    const tweet = await Like.findById(tweetId)
-    if (!tweet) {
-        throw new ApiError(404, "tweet is not found")
-    }
-    tweet.likedBy = !tweet.likedBy
-    await save()
-    const updatedTweet = await Like.findById(tweetId)
-    if (!updatedTweet) {
-        throw new ApiError(404, "tweet cannot be updated")
-    }
+//    if (isValidObjectId(tweetId)) {
+//     throw new ApiError(404, "tweet id is not valid object id")
+//    }
+   const likedTweet = await Like.findOne({ tweet : tweetId , likedBy:req.user?._id})
+//    if (!likedTweet) {
+//     throw new ApiError(404, "Tweet is not found")
+//    }
+   if (likedTweet) {
+    const unlikeTweet =  await Like.findByIdAndDelete(likedTweet?._id)
     return res.status(200)
-        .json(new ApiResponse(200, updatedTweet, "Api response is successfull"))
+        .json(new ApiResponse(200, "Tweet has been unliked"))
+   }
+   const likeTweet = await Like.create( { tweet : tweetId , likedBy : req.user?._id})
+   if (!likeTweet) {
+        throw new ApiError(200, "Tweet cannot be liked")
+   }
+   return res.status(200)
+       .json(new ApiResponse(200, likeTweet, "Api response is successfull"))
 })
 
 const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
-    const likedVideos  = await Like.find({
-        Video : likedBy
-    })
-    if (likedVideos) {
-        throw new ApiError(404, "liked video cannot be found")
-    }
-    return res.status(200)
-        .json(new ApiResponse(200, likedVideos, "Api response is successfull"))
+    const likedVideos = await Like.aggregate([
+        {
+            $match: {
+                likedBy : req.user?._id
+            }
+        },
+        {
+            $lookup:{
+                from : "videos",
+                localField:"video",
+                foreignField:"_id",
+                 as : "likedVideos"
+            }
+        },
+        {
+            $addFields:{
+                likedVideos:{
+                $first : "$likedvideos"}
+            }
+        },
+        {
+            $project:{
+                likedVideos:{
+                    _id : 1,
+                    title : 1
+                }
+            }
+        }
+    ])
+
+if (!likedVideos) {
+    throw new ApiError(404 , "videos cannot be find")
+}
+return res.status(200)
+    .json(new ApiResponse(200, likedVideos, "Api response is successfull"))
 })
 
 export {
